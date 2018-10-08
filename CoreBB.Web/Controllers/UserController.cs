@@ -71,6 +71,45 @@ namespace CoreBB.Web.Controllers
             return RedirectToAction("Index", "Home");
         }
 
+        [AllowAnonymous, HttpGet]
+        public async Task<IActionResult> LogIn()
+        {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return View();
+        }
+
+        [AllowAnonymous, HttpPost]
+        public async Task<IActionResult> LogIn(LogInViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                throw new Exception("Invalid user information.");
+            }
+
+            var targetUser = _dbContext.User.SingleOrDefault(u => u.Name.Equals(model.Name, StringComparison.CurrentCultureIgnoreCase));
+            if (targetUser == null)
+            {
+                throw new Exception("User does not exist.");
+            }
+
+            var hasher = new PasswordHasher<User>();
+            var result = hasher.VerifyHashedPassword(targetUser, targetUser.PasswordHash, model.Password);
+            if (result != PasswordVerificationResult.Success)
+            {
+                throw new Exception("The password is wrong.");
+            }
+
+            await LogInUserAsync(targetUser);
+            return RedirectToAction("Index", "Home");
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> LogOut()
+        {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return RedirectToAction("Index", "Home");
+        }
+
         private async Task LogInUserAsync(User user)
         {
             var claims = new List<Claim>();
