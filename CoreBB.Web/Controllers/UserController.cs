@@ -22,6 +22,13 @@ namespace CoreBB.Web.Controllers
             _dbContext = dbContext;
         }
 
+        [HttpGet, Authorize(Roles = Roles.Administrator)]
+        public IActionResult Index()
+        {
+            var users = _dbContext.User.ToList();
+            return View(users);
+        }
+
         [AllowAnonymous, HttpGet]
         public async Task<IActionResult> Register()
         {
@@ -108,6 +115,88 @@ namespace CoreBB.Web.Controllers
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return RedirectToAction("Index", "Home");
+        }
+
+        [HttpGet]
+        public IActionResult Detail(string name)
+        {
+            var user = _dbContext.User.SingleOrDefault(u => u.Name == name);
+            if (user == null)
+            {
+                throw new Exception($"User '{name}' does not exist.");
+            }
+
+            return View(user);
+        }
+
+        [HttpGet]
+        public IActionResult Edit(string name)
+        {
+            if (User.Identity.Name != name && !User.IsInRole(Roles.Administrator))
+            {
+                throw new Exception("Operation is denied.");
+            }
+
+            var user = _dbContext.User.SingleOrDefault(u => u.Name == name);
+            if (user == null)
+            {
+                throw new Exception($"User '{name}' does not exist.");
+            }
+
+            var model = UserEditViewModel.FromUser(user);
+            return View(model);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Edit(UserEditViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                throw new Exception("Invalid user information.");
+            }
+
+            var user = _dbContext.User
+                .SingleOrDefault(u => u.Name.Equals(model.Name, StringComparison.CurrentCultureIgnoreCase));
+
+            if (user == null)
+            {
+                throw new Exception("User does not exist.");
+            }
+
+            if (!string.IsNullOrEmpty(model.Password))
+            {
+                model.Password = model.Password.Trim();
+                model.RepeatPassword = model.RepeatPassword.Trim();
+                if (!model.Password.Equals(model.RepeatPassword))
+                {
+                    throw new Exception("Passwords are not identical.");
+                }
+
+                var hasher = new PasswordHasher<User>();
+                if (!User.IsInRole(Roles.Administrator))
+                {
+                    var vr = hasher.VerifyHashedPassword(user, user.PasswordHash, model.CurrentPassword);
+                    if (vr != PasswordVerificationResult.Success)
+                    {
+                        throw new Exception("Please provide correct current password.");
+                    }
+                }
+
+                user.PasswordHash = hasher.HashPassword(user, model.Password);
+            }
+
+            user.Description = model.Description;
+
+            if (User.IsInRole(Roles.Administrator))
+            {
+                user.IsAdministrator = model.IsAdministrator;
+                user.IsLocked = model.IsLocked;
+            }
+
+            _dbContext.User.Update(user);
+            await _dbContext.SaveChangesAsync();
+
+            return RedirectToAction("Detail", new { name = user.Name });
         }
 
         private async Task LogInUserAsync(User user)
