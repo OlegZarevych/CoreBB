@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CoreBB.Web.Aspects;
 using CoreBB.Web.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -20,6 +21,7 @@ namespace CoreBB.Web.Controllers
         }
 
         [HttpGet]
+        [LoggingAspect]
         public IActionResult Index(int forumId)
         {
             var forum = _dbContext.Forum.Include("Owner").SingleOrDefault(f => f.Id == forumId);
@@ -34,6 +36,7 @@ namespace CoreBB.Web.Controllers
         }
 
         [HttpGet]
+        [LoggingAspect]
         public IActionResult Create(int forumId)
         {
             var forum = _dbContext.Forum.SingleOrDefault(f => f.Id == forumId);
@@ -52,6 +55,7 @@ namespace CoreBB.Web.Controllers
         }
 
         [HttpPost]
+        [LoggingAspect]
         public async Task<IActionResult> Create(Topic model)
         {
             if (!ModelState.IsValid)
@@ -72,6 +76,7 @@ namespace CoreBB.Web.Controllers
         }
 
         [HttpGet]
+        [LoggingAspect]
         public IActionResult Detail(int id)
         {
             var rootTopic = _dbContext.Topic.Include("Owner").Include("ModifiedByUser")
@@ -87,6 +92,7 @@ namespace CoreBB.Web.Controllers
         }
 
         [HttpPost]
+        [LoggingAspect]
         public async Task<IActionResult> Reply(Topic model)
         {
             if (!ModelState.IsValid)
@@ -104,6 +110,7 @@ namespace CoreBB.Web.Controllers
         }
 
         [HttpGet]
+        [LoggingAspect]
         public IActionResult Reply(int toId)
         {
             var toTopic = _dbContext.Topic.SingleOrDefault(t => t.Id == toId);
@@ -129,6 +136,7 @@ namespace CoreBB.Web.Controllers
         }
 
         [HttpGet]
+        [LoggingAspect]
         public IActionResult Edit(int id)
         {
             var topic = _dbContext.Topic.Include("Owner").Include("ModifiedByUser")
@@ -148,6 +156,7 @@ namespace CoreBB.Web.Controllers
         }
 
         [HttpPost]
+        [LoggingAspect]
         public async Task<IActionResult> Edit(Topic model)
         {
             if (!ModelState.IsValid)
@@ -165,6 +174,7 @@ namespace CoreBB.Web.Controllers
         }
 
         [HttpGet]
+        [LoggingAspect]
         public IActionResult Delete(int id)
         {
             var topic = _dbContext.Topic.SingleOrDefault(t => t.Id == id);
@@ -183,6 +193,7 @@ namespace CoreBB.Web.Controllers
         }
 
         [HttpPost]
+        [LoggingAspect]
         public async Task<IActionResult> Delete(Topic model)
         {
             if (!ModelState.IsValid)
